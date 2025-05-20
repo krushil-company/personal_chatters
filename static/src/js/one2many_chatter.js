@@ -9,65 +9,92 @@ import { Component, useEffect, useExternalListener, useRef, useState } from "@od
 import { browser } from "@web/core/browser/browser";
 import { onWillUpdateProps } from "@odoo/owl";
 
+import { App } from "@odoo/owl";
+import { getTemplate } from "@web/core/templates";
+import { _t } from "@web/core/l10n/translation";
+import { Chatter } from "@mail/chatter/web_portal/chatter";
+
 
 patch(Notebook.prototype, {
     setup() {
-    console.log("starter code");
-    this.activePane = useRef("activePane");
-    this.anchorTarget = null;
-    this.pages = this.computePages(this.props);
-    this.state = useState({ currentPage: null });
-    this.state.currentPage = this.computeActivePage(this.props.defaultPage, true);
+        console.log("starter code");
+        this.activePane = useRef("activePane");
+        this.anchorTarget = null;
+        this.pages = this.computePages(this.props);
+        this.state = useState({ currentPage: null });
+        this.state.currentPage = this.computeActivePage(this.props.defaultPage, true);
 
-    useExternalListener(browser, "click", this.onAnchorClicked);
+        useExternalListener(browser, "click", this.onAnchorClicked);
 
-    useEffect(
-        () => {
-            // This runs AFTER the page switches and renders
-            this.props.onPageUpdate(this.state.currentPage);
+        useEffect(
+            () => {
+                this.props.onPageUpdate(this.state.currentPage);
 
-            if (this.anchorTarget) {
-                const matchingEl = this.activePane.el.querySelector(`#${this.anchorTarget}`);
-                scrollTo(matchingEl, { isAnchor: true });
-                this.anchorTarget = null;
-            }
+                if (this.anchorTarget) {
+                    const matchingEl = this.activePane.el.querySelector(`#${this.anchorTarget}`);
+                    scrollTo(matchingEl, { isAnchor: true });
+                    this.anchorTarget = null;
+                }
 
-            this.activePane.el?.classList.add("show");
+                this.activePane.el?.classList.add("show");
 
-            // ✅ Add your chatter logic here:
-            const chatterEl = document.getElementById("discuss_xyz");
-            const pageEl = this.activePane.el;
+                // ✅ Add your chatter logic here:
+                const chatterEl = document.getElementById("discuss_xyz");
+                const pageEl = this.activePane.el;
 
-            if (!pageEl || !chatterEl) {
-                console.warn("Chatter or page element missing");
-                return;
-            }
+                if (!pageEl || !chatterEl) {
+                    console.warn("Chatter or page element missing");
+                    return;
+                }
 
-            const hasTextarea = pageEl.querySelector("textarea") !== null;
-            const hasX2Many = pageEl.querySelector(".o_field_x2many") !== null;
+                const hasTextarea = pageEl.querySelector("textarea") !== null;
+                const hasX2Many = pageEl.querySelector(".o_field_x2many") !== null;
 
-            const shouldShowChatter = !(hasTextarea || hasX2Many);
+                // Check if current page allows chatter
+                const currentPageTuple = this.pages.find(([id]) => id === this.state.currentPage);
+                const pageConfig = currentPageTuple?.[1] || {};
+                const pageWantsChatter = pageConfig.showChatter !== false;
 
-            if (shouldShowChatter) {
-                pageEl.appendChild(chatterEl);
-                chatterEl.style.display = "";
-                chatterEl.setAttribute("data-res_model", this.env.model.root.model);
-                chatterEl.setAttribute("data-res_id", this.env.model.root.resId);
-                chatterEl.setAttribute("data-allow_composer", "1");
-                console.log(`✅ Chatter shown for model ${this.env.model.root.model} id ${this.env.model.root.resId}`);
-            } else {
-                chatterEl.style.display = "none";
-                console.log("❌ Chatter hidden (textarea or x2many detected)");
-            }
-        },
-        () => [this.state.currentPage]  // runs every time page changes
-    );
+                const shouldShowChatter = pageWantsChatter && !(hasTextarea || hasX2Many);
 
-    onWillUpdateProps((nextProps) => {
-        const activateDefault =
-            this.props.defaultPage !== nextProps.defaultPage || !this.defaultVisible;
-        this.pages = this.computePages(nextProps);
-        this.state.currentPage = this.computeActivePage(nextProps.defaultPage, activateDefault);
-    });
-}
+                if (shouldShowChatter) {
+                    pageEl.appendChild(chatterEl);
+                    chatterEl.style.display = "";
+                    chatterEl.setAttribute("data-res_model", this.env.model.root.model);
+                    chatterEl.setAttribute("data-res_id", this.env.model.root.resId);
+                    chatterEl.setAttribute("data-allow_composer", "1");
+
+                    // Clean previous content
+                    chatterEl.innerHTML = "";
+
+                    // ✅ Mount the real OWL Chatter
+                    new App(Chatter, {
+                        env: this.env,
+                        props: {
+                            threadModel: this.env.model.root.model,
+                            threadId: this.env.model.root.resId,
+                            composer: true,
+                            has_activities: true,
+                        },
+                        getTemplate,
+                        translateFn: _t,
+                    }).mount(chatterEl);
+
+                    console.log(`✅ Chatter mounted for model ${this.env.model.root.model} id ${this.env.model.root.resId}`);
+                } else {
+                    chatterEl.style.display = "none";
+                    chatterEl.innerHTML = ""; // remove if not showing
+                    console.log("❌ Chatter hidden (page disabled or has textarea/x2many detected)");
+                }
+            },
+            () => [this.state.currentPage]
+        );
+
+        onWillUpdateProps((nextProps) => {
+            const activateDefault =
+                this.props.defaultPage !== nextProps.defaultPage || !this.defaultVisible;
+            this.pages = this.computePages(nextProps);
+            this.state.currentPage = this.computeActivePage(nextProps.defaultPage, activateDefault);
+        });
+    }
 });
