@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="web.Notebook" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_notebook_content')]" position="after">
+            <div id="discuss_xyz"
+                 class="d-print-none o_portal_chatter o_not_editable p-0"
+                 data-anchor="true"
+                 style="display: none;">
+                HELLO
+            </div>
+        </xpath>
+    </t>
+</templates>
