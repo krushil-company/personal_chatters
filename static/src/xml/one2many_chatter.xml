@@ -5,7 +5,8 @@
             <div id="discuss_xyz"
                  class="d-print-none o_portal_chatter o_not_editable p-0 o_chatter_container"
                  data-anchor="true"
-                 style="display: none;">
+                 style="display: none;"
+            >
                 HELLO
             </div>
         </xpath>

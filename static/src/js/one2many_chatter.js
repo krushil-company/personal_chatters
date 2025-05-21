@@ -24,7 +24,7 @@ patch(Notebook.prototype, {
         this.state = useState({ currentPage: null });
         this.state.currentPage = this.computeActivePage(this.props.defaultPage, true);
 
-        useExternalListener(browser, "click", this.onAnchorClicked);
+//        useExternalListener(browser, "click", this.onAnchorClicked);
 
         useEffect(
             () => {
@@ -57,10 +57,12 @@ patch(Notebook.prototype, {
 
                 const shouldShowChatter = pageWantsChatter && !(hasTextarea || hasX2Many);
 
+
                 if (shouldShowChatter) {
+//                    console.log('***this', this.env.searchModel.resModel);
                     pageEl.appendChild(chatterEl);
                     chatterEl.style.display = "";
-                    chatterEl.setAttribute("data-res_model", this.env.model.root.model);
+                    chatterEl.setAttribute("data-res_model", this.env.searchModel.resModel);
                     chatterEl.setAttribute("data-res_id", this.env.model.root.resId);
                     chatterEl.setAttribute("data-allow_composer", "1");
 
@@ -71,7 +73,7 @@ patch(Notebook.prototype, {
                     new App(Chatter, {
                         env: this.env,
                         props: {
-                            threadModel: this.env.model.root.model,
+                            threadModel: this.env.searchModel.resModel,
                             threadId: this.env.model.root.resId,
                             composer: true,
                             has_activities: true,
@@ -80,7 +82,7 @@ patch(Notebook.prototype, {
                         translateFn: _t,
                     }).mount(chatterEl);
 
-                    console.log(`✅ Chatter mounted for model ${this.env.model.root.model} id ${this.env.model.root.resId}`);
+                    console.log(`✅ Chatter mounted for model ${this.env.searchModel.resModel} id ${this.env.model.root.resId}`);
                 } else {
                     chatterEl.style.display = "none";
                     chatterEl.innerHTML = ""; // remove if not showing
