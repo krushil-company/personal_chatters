@@ -8,6 +8,7 @@ import { registry } from "@web/core/registry";
 import { Component, useEffect, useExternalListener, useRef, useState } from "@odoo/owl";
 import { browser } from "@web/core/browser/browser";
 import { onWillUpdateProps } from "@odoo/owl";
+import { onWillUnmount } from "@odoo/owl";
 
 import { App } from "@odoo/owl";
 import { getTemplate } from "@web/core/templates";
@@ -59,18 +60,22 @@ patch(Notebook.prototype, {
 
 
                 if (shouldShowChatter) {
-//                    console.log('***this', this.env.searchModel.resModel);
+                    // Unmount old chatter if exists
+                    if (this.chatterApp) {
+                        this.chatterApp.destroy();
+                        this.chatterApp = null;
+                    }
+
                     pageEl.appendChild(chatterEl);
                     chatterEl.style.display = "";
                     chatterEl.setAttribute("data-res_model", this.env.searchModel.resModel);
                     chatterEl.setAttribute("data-res_id", this.env.model.root.resId);
                     chatterEl.setAttribute("data-allow_composer", "1");
 
-                    // Clean previous content
                     chatterEl.innerHTML = "";
 
-                    // ✅ Mount the real OWL Chatter
-                    new App(Chatter, {
+                    // Mount new chatter
+                    this.chatterApp = new App(Chatter, {
                         env: this.env,
                         props: {
                             threadModel: this.env.searchModel.resModel,
@@ -80,13 +85,19 @@ patch(Notebook.prototype, {
                         },
                         getTemplate,
                         translateFn: _t,
-                    }).mount(chatterEl);
+                    });
+                    this.chatterApp.mount(chatterEl);
 
-                    console.log(`✅ Chatter mounted for model ${this.env.searchModel.resModel} id ${this.env.model.root.resId}`);
+                    console.log(`✅ Chatter mounted for ${this.state.currentPage}`);
                 } else {
+                    if (this.chatterApp) {
+                        this.chatterApp.destroy();
+                        this.chatterApp = null;
+                    }
+
                     chatterEl.style.display = "none";
-                    chatterEl.innerHTML = ""; // remove if not showing
-                    console.log("❌ Chatter hidden (page disabled or has textarea/x2many detected)");
+                    chatterEl.innerHTML = ""; // Clean DOM
+                    console.log("❌ Chatter hidden");
                 }
             },
             () => [this.state.currentPage]
@@ -98,5 +109,14 @@ patch(Notebook.prototype, {
             this.pages = this.computePages(nextProps);
             this.state.currentPage = this.computeActivePage(nextProps.defaultPage, activateDefault);
         });
+
+        onWillUnmount(() => {
+            if (this.chatterApp) {
+                console.log("💥 Destroying chatter due to form view close");
+                this.chatterApp.destroy();
+                this.chatterApp = null;
+            }
+        });
+
     }
 });
