@@ -15,14 +15,14 @@ import { useService } from "@web/core/utils/hooks";
 import { useThrottleForAnimation } from "@web/core/utils/timing";
 
 import { Dropdown } from "@web/core/dropdown/dropdown";
-// import { FollowerList } from "@mail/core/common/follower_list";
-// import { Activity } from "@mail/core/common/activity";
-// import { ScheduledMessage } from "@mail/core/common/scheduled_message";
-// import { AttachmentList } from "@mail/core/common/attachment_list";
-// import { SearchMessageInput } from "@mail/core/common/search_message_input";
-// import { SearchMessageResult } from "@mail/core/common/search_message_result";
-// import { SuggestedRecipientsList } from "@mail/core/common/suggested_recipients_list";
-// import { BaseRecipientsList } from "@mail/core/common/base_recipients_list";
+import { FollowerList } from "@mail/core/web/follower_list";
+import { Activity } from "@mail/core/web/activity_model";
+import { ScheduledMessage } from "@mail/chatter/web/scheduled_message";
+import { AttachmentList } from "@mail/core/common/attachment_list";
+import { SearchMessageInput } from "@mail/core/common/search_message_input";
+import { SearchMessageResult } from "@mail/core/common/search_message_result";
+import { SuggestedRecipientsList } from "@mail/core/web/suggested_recipient_list";
+import { BaseRecipientsList } from "@mail/core/web/base_recipients_list";
 import { FileUploader } from "@web/views/fields/file_handler";
 
 
@@ -33,19 +33,19 @@ import { FileUploader } from "@web/views/fields/file_handler";
 export class PersonalChatter extends Component {
     static template = "mail.PersonalChatter";
     static components = {
-    Thread,
-    Composer,
-    FileUploader,
-    Dropdown,
-    // FollowerList,
-    // Activity,
-    // ScheduledMessage,
-    // AttachmentList,
-    // SearchMessageInput,
-    // SearchMessageResult,
-    // SuggestedRecipientsList,
-    // BaseRecipientsList,
-};
+        Thread,
+        Composer,
+        FileUploader,
+        Dropdown,
+        FollowerList,
+        Activity,
+        ScheduledMessage,
+        AttachmentList,
+        SearchMessageInput,
+        SearchMessageResult,
+        SuggestedRecipientsList,
+        BaseRecipientsList,
+    };
     static props = ["composer?", "threadId?", "threadModel", "twoColumns?"];
     static defaultProps = { composer: true, threadId: false, twoColumns: false };
 
@@ -159,20 +159,26 @@ export class PersonalChatter extends Component {
         this.state.isTopStickyPinned = this.rootRef.el.scrollTop !== 0;
     }
 
-    onUploaded() {}
-    onClickAttachFile() {}
-    onAddFollowers() {}
-    onFollowerChanged() {}
-    onClickUnfollow() {}
-    onClickFollow() {}
-    closeSearch() {}
-    toggleComposer() {}
-    scheduleActivity() {}
-    popoutAttachment() {}
-    onActivityChanged() {}
-    reloadParentView() {}
-    onScheduledMessageChanged() {}
-    unlinkAttachment() {}
-    onClickAddAttachments() {}
-    onSuggestedRecipientAdded() {}
+    onUploaded() { }
+    onClickAttachFile() { }
+    onAddFollowers() { }
+    onFollowerChanged() { }
+    popoutAttachment() { }
+    onActivityChanged() { }
+    reloadParentView() { }
+    onScheduledMessageChanged() { }
+    unlinkAttachment() { }
+    onClickAddAttachments() { }
+    onSuggestedRecipientAdded() { }
+
+    toggleComposer(type) {
+        this.state.composerType = this.state.composerType === type ? null : type;
+    }
+    onClickSearch() { this.state.isSearchOpen = true; }
+    closeSearch() { this.state.isSearchOpen = false; }
+    scheduleActivity() { this.state.showActivities = !this.state.showActivities; }
+    toggleActivities() { this.state.showActivities = !this.state.showActivities; }
+    toggleScheduledMessages() { this.state.showScheduledMessages = !this.state.showScheduledMessages; }
+    onClickFollow() { if (this.state.thread) this.state.thread.selfFollower = true; }
+    onClickUnfollow() { if (this.state.thread) this.state.thread.selfFollower = false; }
 }
