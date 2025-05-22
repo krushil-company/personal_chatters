@@ -17,17 +17,15 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'chatters/static/src/js/personal_chatter.js',
+            'chatters/static/src/xml/personal_chatter.xml',
             'chatters/static/src/js/one2many_chatter.js',
             'chatters/static/src/xml/one2many_chatter.xml',
         ],
     },
-    # 'assets': {
-    #     'web.assets_backend': [
-    #         'chatters/static/src/components/page_chatter_container.js',
-    #         'chatters/static/src/page_chatter_container.xml',
-    #         'chatters/static/src/form_controller_patch.js',
-    #     ],
-    # },
+    "qweb": [
+        "static/src/xml/personal_chatter.xml",
+    ],
     'installable': True,
     'auto_install': True,
     'application': True

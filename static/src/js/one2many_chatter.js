@@ -5,7 +5,7 @@ import { patch } from "@web/core/utils/patch";
 import { session } from "@web/session";
 import { rpc } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
-import { Component, useEffect, useExternalListener, useRef, useState } from "@odoo/owl";
+import { Component, useEffect, useExternalListener, useRef, useState, onMounted } from "@odoo/owl";
 import { browser } from "@web/core/browser/browser";
 import { onWillUpdateProps } from "@odoo/owl";
 import { onWillUnmount } from "@odoo/owl";
@@ -13,8 +13,10 @@ import { onWillUnmount } from "@odoo/owl";
 import { App } from "@odoo/owl";
 import { getTemplate } from "@web/core/templates";
 import { _t } from "@web/core/l10n/translation";
-import { Chatter } from "@mail/chatter/web_portal/chatter";
+import { PersonalChatter } from "./personal_chatter";
+import { Dialog } from "@web/core/dialog/dialog";
 
+import { useService } from "@web/core/utils/hooks";
 
 patch(Notebook.prototype, {
     setup() {
@@ -24,12 +26,14 @@ patch(Notebook.prototype, {
         this.pages = this.computePages(this.props);
         this.state = useState({ currentPage: null });
         this.state.currentPage = this.computeActivePage(this.props.defaultPage, true);
-
-//        useExternalListener(browser, "click", this.onAnchorClicked);
+        this.orm = useService("orm");
+        // this._getAmazonSettings();
 
         useEffect(
             () => {
                 this.props.onPageUpdate(this.state.currentPage);
+                // this._getAmazonSettings()
+
 
                 if (this.anchorTarget) {
                     const matchingEl = this.activePane.el.querySelector(`#${this.anchorTarget}`);
@@ -39,7 +43,6 @@ patch(Notebook.prototype, {
 
                 this.activePane.el?.classList.add("show");
 
-                // ✅ Add your chatter logic here:
                 const chatterEl = document.getElementById("discuss_xyz");
                 const pageEl = this.activePane.el;
 
@@ -51,16 +54,12 @@ patch(Notebook.prototype, {
                 const hasTextarea = pageEl.querySelector("textarea") !== null;
                 const hasX2Many = pageEl.querySelector(".o_field_x2many") !== null;
 
-                // Check if current page allows chatter
                 const currentPageTuple = this.pages.find(([id]) => id === this.state.currentPage);
                 const pageConfig = currentPageTuple?.[1] || {};
                 const pageWantsChatter = pageConfig.showChatter !== false;
-
                 const shouldShowChatter = pageWantsChatter && !(hasTextarea || hasX2Many);
 
-
                 if (shouldShowChatter) {
-                    // Unmount old chatter if exists
                     if (this.chatterApp) {
                         this.chatterApp.destroy();
                         this.chatterApp = null;
@@ -71,21 +70,21 @@ patch(Notebook.prototype, {
                     chatterEl.setAttribute("data-res_model", this.env.searchModel.resModel);
                     chatterEl.setAttribute("data-res_id", this.env.model.root.resId);
                     chatterEl.setAttribute("data-allow_composer", "1");
-
                     chatterEl.innerHTML = "";
 
-                    // Mount new chatter
-                    this.chatterApp = new App(Chatter, {
+                    this.chatterApp = new App(PersonalChatter, {
                         env: this.env,
                         props: {
                             threadModel: this.env.searchModel.resModel,
                             threadId: this.env.model.root.resId,
+                            currentPage: this.state.currentPage, // Pass page context
                             composer: true,
                             has_activities: true,
                         },
                         getTemplate,
                         translateFn: _t,
                     });
+
                     this.chatterApp.mount(chatterEl);
 
                     console.log(`✅ Chatter mounted for ${this.state.currentPage}`);
@@ -96,7 +95,7 @@ patch(Notebook.prototype, {
                     }
 
                     chatterEl.style.display = "none";
-                    chatterEl.innerHTML = ""; // Clean DOM
+                    chatterEl.innerHTML = "";
                     console.log("❌ Chatter hidden");
                 }
             },
@@ -117,6 +116,30 @@ patch(Notebook.prototype, {
                 this.chatterApp = null;
             }
         });
+    },
 
-    }
+    // async _getAmazonSettings() {
+    //     return rpc("/web/dataset/call_kw/mail.message/custom_method", {
+    //         model: 'mail.message',
+    //         method: 'custom_method',
+    //         args: [[100]],
+    //         kwargs: {
+    //             model_name: this.env.searchModel.resModel,
+    //             record_id: this.env.model.root.resId,
+    //             all_data: 'heelpo',
+    //         },
+    //     });
+    // },
 });
+
+// patch(Chatter.prototype, {
+//     setup() {
+//         super.setup();
+//         console.log('[[[[[[[[[[[[[[[[[[[');
+//     },
+
+//     load(thread, requestList) {
+//         super.load(thread, requestList);
+//         console.log('|||||||||||||||||');
+//     }
+// });
